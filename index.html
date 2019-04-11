@@ -5,60 +5,112 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
   <link rel="stylesheet" href="css/style.css"/>
   <link href="css/vuetify.min.css" rel="stylesheet">
-  <title>Sync</title>
+  <title>frkt sync</title>
 </head>
 
 <body>
   <div id="app">
     <v-app>
-      <v-toolbar flat="flat" height="30px">
-          <v-spacer></v-spacer>
-          <v-toolbar-title style="margin-left:0;" class="display-5">sync p2p</v-toolbar-title>
-          <v-spacer></v-spacer>
-        </v-toolbar>
+      <v-toolbar flat="flat" height="32px">
+
+        <v-toolbar-title  class="display-5">
+          Sync <span :style="{color:connected ? 'green' : 'red'}">● </span>
+        </v-toolbar-title>
+
+        <v-toolbar-items>
+          <v-btn @click="open.qr=!open.qr" icon>QR</v-btn>
+        </v-toolbar-items>
+        <v-spacer></v-spacer>
+
+      </v-toolbar>
+
         <v-content>
+
           <v-card :color="colorHash(address).hex">
+            <v-slide-y-transition>
+              <svg v-show="open.qr" id="qrcode-svg" style="width:100%; max-width:600px; padding:0; background-color:#E8E8E8">
+                          <rect fill="#FFFFFF" width="100%" height="100%" stroke-width="0"></rect>
+                          <path d="" :fill="colorHash(address).hex" stroke-width="0"></path>
+              </svg>
+            </v-slide-y-transition>
+
             <v-card-title nowrap>
-              <v-container>
-              <v-layout justify-center>
-                <v-flex>
-                    <img width=60 height=60 :src="'data:image/svg+xml;base64,' + avatar">
-                </v-flex>
-                <v-flex>
-                  <v-text-field label="Message" outline v-model="messageText"></v-text-field>
-                 </v-flex>
-                <v-flex><v-btn @click="say(messageText);">Send</v-btn></v-flex>
-              </v-layout>
-            </v-container>
+              <v-flex v-for="user in users">
+                <img :key="user.ID" width=60 height=60 :src="'data:image/svg+xml;base64,' + user.avatar"><br /> {{user.name || 'anonym'}}
+              </v-flex>
 
            </v-card-title>
-
           </v-card>
-            <v-container grid-list-md>
-              <v-layout wrap>
-                <v-flex v-for="user in users" :key="user.ID">
-                  <v-card :color="colorHash(user.ID).hex">
-                    <v-card-title >
-                      <img width=60 height=60 :src="'data:image/svg+xml;base64,' + user.avatar">
 
-                    </v-card-title>
-                    <v-card-text>
-                    {{user.coords.x}} - {{user.coords.y}}
-                      <v-list subheader>
-                        <v-list-tile v-for="(said,i) in user.said" :key="i" >
-                          <v-list-tile-content>
-                            {{said}}
-                          </v-list-tile-content>
-                        </v-list-tile>
-                      </v-list>
+          <v-tabs>
+            <v-tab>Me</v-tab>
+            <v-tab>Chat</v-tab>
+            <v-tab>Note</v-tab>
+            <v-tab-item>
+              <v-card>
+                <v-card-title>
+                  <v-flex>
+                    <img width=60 height=60 :src="'data:image/svg+xml;base64,' + avatar">
+                  </v-flex>
+                  <v-flex>
+                    {{myName || 'anonym'}} <br>
+                    {{address}}
+                  </v-flex>
 
-                    </v-card-text>
-                  </v-card>
-                </v-flex>
-              </v-layout>
-            </v-container>
-
-
+                </v-card-title>
+                <v-card-text>
+                  <v-text-field  label="Name" v-model="name">
+                    <div slot="append"><v-btn @click="setName()" icon>Hi!</v-btn></div>
+                  </v-text-field>
+                  {{users[0].said}}
+                </v-card-text>
+                <v-card-actions>
+                  <v-container grid-list-md>
+                    <v-layout row wrap>
+                      <v-flex xs2 md1 v-for="note in notes">
+                        <v-btn class="note-btn" dark icon :color="note.color" @click="playNote(note.pitch, true)">
+                          {{note.name}}
+                        </v-btn>
+                      </v-flex>
+                    </v-layout>
+                  </v-container>
+                </v-card-actions>
+              </v-card>
+            </v-tab-item>
+            <v-tab-item>
+              <v-list two-line>
+                <v-list-tile>
+                  <v-list-tile-avatar tile>
+                      <img width=60 height=60 :src="'data:image/svg+xml;base64,' + avatar">
+                  </v-list-tile-avatar>
+                  <v-list-tile-content>
+                    <v-text-field  label="Message" v-model="messageText">
+                      <div slot="append"><v-btn @click="say()" icon>send</v-btn></div>
+                    </v-text-field>
+                  </v-list-tile-content>
+                </v-list-tile>
+                <v-list-tile v-for="(message,i) in chat" :key="i">
+                  <v-list-tile-avatar tile>
+                    <img width=60 height=60 :src="'data:image/svg+xml;base64,' + getAvatar(message.who)">
+                  </v-list-tile-avatar>
+                  <v-list-tile-content>
+                    {{message.what}}
+                  </v-list-tile-content>
+                </v-list-tile>
+              </v-list>
+            </v-tab-item>
+            <v-tab-item>
+              <v-container grid-list-md>
+                <v-layout row wrap>
+                  <v-flex xs2 md1 v-for="note in notes">
+                    <v-btn dark icon :color="note.color" @click="playNote(note.pitch,true)">
+                      {{note.name}}
+                    </v-btn>
+                  </v-flex>
+                </v-layout>
+              </v-container>
+            </v-tab-item>
+          </v-tabs>
         </v-content>
 
 
@@ -67,6 +119,8 @@
 </body>
 
 <script src="js/libs/bugout.min.js" type="application/javascript"></script>
+<script src="js/libs/qrcodegen.js"></script>
+<script src="js/libs/Tone.js"></script>
 <script src="js/libs/identicon.js"></script>
 <script src="js/libs/vue.js"></script>
 <script src="js/libs/vuetify.js"></script>
